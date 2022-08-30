@@ -1,0 +1,16 @@
+---
+# vars file for role-sso-setup
+rh_sso_ports:
+  - 8080/tcp
+  - 8443/tcp
+  - 9990/tcp
+  - 9993/tcp
+  - 443/tcp
+  - 389/tcp
+  - 636/udp
+
+rh_sso_repositories:
+  - jb-eap-7.4-for-rhel-8-x86_64-rpms
+  - rhel-8-for-x86_64-baseos-rpms
+  - rhel-8-for-x86_64-appstream-rpms
+  - rh-sso-7.6-for-rhel-8-x86_64-rpms

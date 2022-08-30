@@ -1,0 +1,78 @@
+---
+- name: Register system with Red Hat Subscription Manager
+  community.general.redhat_subscription:
+    state: present
+    username: "{{ rhsm_user }}"
+    password: "{{ rhsm_password }}"
+    pool_ids: "{{ rhsm_pool_id }}"
+
+- name: Disable all RHSM repositories
+  community.general.rhsm_repository:
+    name: '*'
+    state: disabled
+
+- name: Enable required RHSM repositories
+  community.general.rhsm_repository:
+    name: "{{ rh_sso_repositories }}"
+    state: enabled
+
+- name: Ensure all packages are updated
+  ansible.builtin.dnf:
+    name: '*'
+    state: latest # noqa package-latest
+
+- name: Install SSO packages
+  ansible.builtin.dnf:
+    name: '@rh-sso7'
+    state: latest # noqa package-latest
+
+- name: Ensure chrony is enabled
+  ansible.builtin.service:
+    name: chronyd
+    enabled: true
+    state: started
+
+- name: Ensure firewalld is enabled
+  ansible.builtin.service:
+    name: firewalld
+    enabled: true
+    state: started
+
+- name: Allow ports for SSO
+  ansible.posix.firewalld:
+    zone: public
+    state: enabled
+    permanent: true
+    port: "{{ item }}"
+  loop: "{{ rh_sso_ports }}"
+
+- name: Reload firewalld service
+  ansible.builtin.service:
+    name: firewalld
+    state: restarted
+
+- name: Reboot server
+  ansible.builtin.reboot:
+
+- name: Fix permission issues on SSO folders
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: jboss
+    group: root
+    recurse: true
+  loop:
+    - /opt/rh/rh-sso7/
+    - /var/opt/rh/rh-sso7/
+  become: true
+
+- name: Configure admin user
+  ansible.builtin.command:
+    cmd: "/opt/rh/rh-sso7/root/usr/share/keycloak/bin/add-user-keycloak.sh -u {{ rh_sso_admin_user | default('admin', true) }} -p {{ rh_sso_admin_password | default('redhat', true)}}"
+  become: true
+
+- name: Start keycloak in standalone configuration
+  ansible.builtin.service:
+    name: rh-sso7
+    enabled: true
+    state: started
+  become: true

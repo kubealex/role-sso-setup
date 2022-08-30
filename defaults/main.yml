@@ -1,0 +1,6 @@
+---
+rhsm_user:
+rhsm_password:
+rhsm_pool_id:
+rh_sso_admin_user:
+rh_sso_admin_password:
